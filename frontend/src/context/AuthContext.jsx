@@ -38,25 +38,25 @@ export const AuthProvider = ({ children }) => {
     setLoading(false)
   }, [])
 
-  const login = async (email, password) => {
-    try {
-      console.log('🔐 Tentando login com:', email)
-      const data = await apiLogin(email, password)
-      console.log('✅ Login response:', data)
-      
-      // Salvar no localStorage
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.usuario))
-      
-      setToken(data.token)
-      setUser(data.usuario)
-      
-      return { success: true, dashboard: data.dashboard }
-    } catch (error) {
-      console.error('❌ Erro no login:', error)
-      return { success: false, error: error.message }
-    }
+const login = async (email, password) => {
+  try {
+    console.log('🔐 Tentando login com:', email)
+    const data = await apiLogin(email, password)
+    console.log('✅ Login response:', data)
+
+    // Ajusta según lo que tu backend realmente devuelve
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('user', JSON.stringify(data.usuario))
+
+    setToken(data.token)
+    setUser(data.usuario)
+
+    return { success: true, dashboard: data.dashboard || '/dashboard' }
+  } catch (error) {
+    console.error('❌ Erro no login:', error)
+    return { success: false, error: error.message }
   }
+}
 
   const logout = () => {
     console.log('🔓 Fazendo logout')
