@@ -11,11 +11,13 @@ const __dirname = path.dirname(__filename)
 
 dotenv.config()
 
-connectDB()
+if (process.env.NODE_ENV !== 'test') {
+  connectDB()
+}
 
 const app = express()
 
-// Configuração CORS completa
+// Configuración CORS completa
 app.use(cors({
   origin: 'http://localhost:5173',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -84,13 +86,16 @@ app.use((req, res) => {
 
 // ============ INICIAR ============
 const PORT = process.env.PORT || 3000
-app.listen(PORT, () => {
-  console.log(`✅ Servidor rodando en http://localhost:${PORT}`)
-  console.log(`🌐 Login: http://localhost:${PORT}`)
-  console.log(`👤 Admin: http://localhost:${PORT}/admin-dashboard`)
-  console.log(`👨‍🏫 Profesor: http://localhost:${PORT}/profesor-dashboard`)
-  console.log(`👨‍🎓 Alumno: http://localhost:${PORT}/alumno-dashboard`)
-  console.log(`🚀 API Test: http://localhost:${PORT}/api/test`)
-})
+
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`✅ Servidor rodando en http://localhost:${PORT}`)
+    console.log(`🌐 Login: http://localhost:${PORT}`)
+    console.log(`👤 Admin: http://localhost:${PORT}/admin-dashboard`)
+    console.log(`👨‍🏫 Profesor: http://localhost:${PORT}/profesor-dashboard`)
+    console.log(`👨‍🎓 Alumno: http://localhost:${PORT}/alumno-dashboard`)
+    console.log(`🚀 API Test: http://localhost:${PORT}/api/test`)
+  })
+}
 
 export default app

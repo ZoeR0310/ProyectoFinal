@@ -1,12 +1,14 @@
-const request = require('supertest');
-const app = require('../server');
-const Usuario = require('../src/models/usuario.model');
-const Taller = require('../src/models/taller.model');
+import request from 'supertest';
+import app from '../server.js';
+import Usuario from '../src/models/usuario.model.js';
+import Taller from '../src/models/taller.model.js';
 
 describe('Talleres API', () => {
     let token;
     let adminId;
     let profesorId;
+    let profesorToken;
+    let otroProfesorToken;
     let tallerId;
 
     beforeAll(async () => {
@@ -32,15 +34,31 @@ describe('Talleres API', () => {
         });
         profesorId = profesor._id;
 
-        // Login para obtener token
-        const loginRes = await request(app)
-            .post('/api/auth/login')
-            .send({
-                email: 'admin@test.com',
-                password: '123456'
-            });
+        // Crear otro profesor
+        const otroProfesor = await Usuario.create({
+            nombre: 'Otro Profesor',
+            email: 'otroprof@test.com',
+            password: '123456',
+            rol: 'profesor'
+        });
 
-        token = loginRes.body.token;
+        // Login admin
+        const loginAdmin = await request(app)
+            .post('/api/auth/login')
+            .send({ email: 'admin@test.com', password: '123456' });
+        token = loginAdmin.body.token;
+
+        // Login profesor principal
+        const loginProf = await request(app)
+            .post('/api/auth/login')
+            .send({ email: 'profesor@test.com', password: '123456' });
+        profesorToken = loginProf.body.token;
+
+        // Login otro profesor
+        const loginOtroProf = await request(app)
+            .post('/api/auth/login')
+            .send({ email: 'otroprof@test.com', password: '123456' });
+        otroProfesorToken = loginOtroProf.body.token;
     });
 
     test('POST /api/talleres - crear taller (admin)', async () => {
@@ -94,7 +112,7 @@ describe('Talleres API', () => {
         expect(res.body.taller._id).toBe(tallerId);
     });
 
-    test('PUT /api/talleres/:id - actualizar taller', async () => {
+    test('PUT /api/talleres/:id - actualizar taller (admin)', async () => {
         const res = await request(app)
             .put(`/api/talleres/${tallerId}`)
             .set('Authorization', `Bearer ${token}`)
@@ -106,12 +124,31 @@ describe('Talleres API', () => {
         expect(res.body.taller.titulo).toBe('Taller de Prueba Actualizado');
     });
 
-    test('DELETE /api/talleres/:id - eliminar taller', async () => {
+
+    test('PUT /api/talleres/:id - profesor no puede actualizar taller ajeno', async () => {
+        const res = await request(app)
+            .put(`/api/talleres/${tallerId}`)
+            .set('Authorization', `Bearer ${otroProfesorToken}`)
+            .send({ titulo: 'Intento de cambio' });
+
+        expect(res.statusCode).toBe(403);
+    });
+
+    test('DELETE /api/talleres/:id - admin puede eliminar taller', async () => {
         const res = await request(app)
             .delete(`/api/talleres/${tallerId}`)
             .set('Authorization', `Bearer ${token}`);
 
         expect(res.statusCode).toBe(200);
         expect(res.body.mensaje).toBe('Taller eliminado correctamente');
+    });
+
+    test('GET /api/talleres - paginación con valores extremos', async () => {
+        const res = await request(app)
+            .get('/api/talleres?page=999999&limit=100000')
+            .set('Authorization', `Bearer ${token}`);
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body.talleres.length).toBeLessThanOrEqual(100);
     });
 });

@@ -1,14 +1,18 @@
-const request = require('supertest');
-const app = require('../server');
-const Usuario = require('../src/models/usuario.model');
+import request from 'supertest';
+import app from '../server.js';
+import Usuario from '../src/models/usuario.model.js';
+import mongoose from 'mongoose';
 
 describe('Autenticación', () => {
     beforeEach(async () => {
         await Usuario.deleteMany({});
     });
 
+    afterAll(async () => {
+        await mongoose.connection.close();
+    });
+
     test('POST /api/auth/login - éxito', async () => {
-        // Crear usuario primero
         await Usuario.create({
             nombre: 'Test',
             email: 'test@test.com',
@@ -39,5 +43,21 @@ describe('Autenticación', () => {
 
         expect(res.statusCode).toBe(401);
         expect(res.body.mensaje).toBe('Credenciales inválidas');
+    });
+
+    test('POST /api/auth/login - debe rechazar intento de inyección NoSQL', async () => {
+        const res = await request(app)
+            .post('/api/auth/login')
+            .send({
+                email: { $ne: null },
+                password: { $ne: null }
+            });
+
+        expect([400, 401]).toContain(res.statusCode);
+    });
+
+    test('GET /api/usuarios - sin token debe dar 401', async () => {
+        const res = await request(app).get('/api/usuarios');
+        expect(res.statusCode).toBe(401);
     });
 });
